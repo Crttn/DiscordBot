@@ -1,12 +1,14 @@
 # DiscordReactionVerifier
 
-A simple reaction verification bot. 
+A simple reaction verification bot
 
 
 
 ## Setup
 
 Install requeriments.txt
+
+Edit the required data in the config.py file
 
 Run the main.py file
 
