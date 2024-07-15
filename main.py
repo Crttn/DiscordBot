@@ -1,9 +1,11 @@
 import os
-from dotenv import load_dotenv
-from config import Config
 import discord
-from easy_pil import Editor, load_image_async, Font
+import events
+from config import Config
+from dotenv import load_dotenv
 from discord.ext import commands, tasks
+from easy_pil import Editor, load_image_async, Font
+
 
 # Obtinen las configuraciones necesarias
 load_dotenv()
@@ -13,10 +15,9 @@ bot = commands.Bot(command_prefix=prefix, intents=discord.Intents.all())
 
 # Variables de configuración del bot
 bot.setup = False
+events.setup(bot)
 bot.join_role_name = Config.role_name_new_user
 bot.verify_role_name = Config.role_name_verified
-bot.message_normas_id = Config.message_normas_id
-bot.channel_normas_id = Config.channel_normas_id
 
 # Conección incial con el bot
 @bot.event
@@ -28,29 +29,42 @@ async def on_ready():
 @bot.command()
 async def setup(ctx):
     try:
-        message_id = int(bot.message_normas_id)
-        channel_id = int(bot.channel_normas_id)
+        rules_channel_id = Config.rules_channel_id
+        rules_message_id = Config.rules_message_id
+        roles_channel_id = Config.channel_roles_id 
+        roles_message_id = Config.roles_message_id
     except ValueError:
         return await ctx.send("ID del canal o del mensaje erroneo")
     except Exception as e:
         return await ctx.send(f"Error en la configuración: {e}")
 
-    channel = bot.get_channel(channel_id)
-    if channel is None:
-        return await ctx.send("Canal no encontado")
+    rules_channel = bot.get_channel(rules_channel_id)
+    roles_channel = bot.get_channel(roles_channel_id)
+    
+    if rules_channel is None:
+        return await ctx.send("Canal de normas no encontado")
+    if roles_channel is None:
+        return await ctx.send("Canal de roles no encontrado")
 
     try:
-        message = await channel.fetch_message(message_id)
+        rules_message = await rules_channel.fetch_message(rules_message_id)
+        roles_message = await roles_channel.fetch_message(roles_message_id)
     except discord.NotFound:
         return await ctx.send("Mensaje no encontrado")
     except Exception as e:
         return await ctx.send(f"Error al encontrar el mensaje: {e}")
     
     try:
-        await message.add_reaction("✅")
+        await rules_message.add_reaction("✅")
+        await roles_message.add_reaction("⚫")
+        await roles_message.add_reaction("🟠")
+        await roles_message.add_reaction("⚪")
+        await roles_message.add_reaction("🟢")
+        await roles_message.add_reaction("🔵")
+        await roles_message.add_reaction("📨")
     except Exception as e:
         return await ctx.send(f"Error al añadir la reacción: {e}")
-
+    
     bot.setup = True
     print("Configuración del bot compeltada")
     await ctx.send("Configuración compeltada 🟢")
@@ -78,12 +92,12 @@ async def on_member_join(member):
     background.paste(profile, (325, 90))
     background.ellipse((325, 90), 150, 150, outline="white", stroke_width=5)
     
-    background.text((400, 260), f"BIENVENIDO A {member.guild.name}", color="white", font=poppins, align="center")
+    background.text((400, 260), f"BIENVENIDO A {member.guild.name.upper()}", color="white", font=poppins, align="center")
     background.text((400, 325), f"{member.name}", color="white", font=poppins_small, align="center")
     
     file = discord.File(fp=background.image_bytes, filename="pic1.jpg")
 
-    await channel.send(f"Hola {member.mention}! Binevenido a **{member.guild.name}** Para mas información ve a **#Normas**")
+    await channel.send(f"Hola {member.mention}! Binevenido a **{member.guild.name.upper()}** Para mas información ve a **#Normas**")
     await channel.send(file=file)
 
     #  Asigna el rol "Sin Verificar" a los nuevos usuarios
@@ -103,39 +117,6 @@ async def on_member_join(member):
     except Exception as e:
         print(f"Error al agregar el rol: {e}")
 
-# Obtiene la reacción de los nuevos usuarios ante las normas y agrega el rol "Verificado", tambien elimina el rol "Sin Verificar"
-@bot.event
-async def on_raw_reaction_add(payload):
-    if not bot.setup:
-        return print(f"El bot no está configurado. Escribe {prefix}setup para configurarlo")
-
-    if payload.message_id == int(bot.message_normas_id) and str(payload.emoji) == "✅":
-        guild = bot.get_guild(payload.guild_id)
-        if guild is None:
-            return print("No se ha encotrado el servidor")
-        
-        role = discord.utils.get(guild.roles, name=bot.verify_role_name)
-        old_role = discord.utils.get(guild.roles, name=bot.join_role_name)
-        if role is None:
-            return print("El rol no se ha encotrado")
-        
-        member = guild.get_member(payload.user_id)
-        if member is None:
-            return
-        
-        # Añadir/Eliminar roles
-        try:
-            if old_role in member.roles:
-                # Elimina el rol "Sin Verificar"
-                await member.remove_roles(old_role)
-                print(f"Rol eliminado '{old_role.name}' a {member.name}")
-            # Agrega el rol "Verificado"
-            await member.add_roles(role)
-            print(f"Rol asignado '{role.name}' a {member.name}")
-        except discord.Forbidden:
-            print(f"Permisos inecesarios para añadir/remover el rol a {member.name}")
-        except Exception as e:
-            print(f"Error al añadir/remover el rol: {e}")
 
 # Obtiene la cantidad de miembros y bots del discord y la muestra como nombre de canales de voz 
 @tasks.loop(minutes=5)
@@ -205,5 +186,34 @@ async def countUsers():
             print(f"El bot no tiene permisos para editar canales")
     else:
         print(f"No se ha encontrado el canal con id: {bot_cannle_id}")
+
+# Genera un mensaje para los roles de juego
+@bot.command()
+async def rols_embed_message(ctx):
+    channel = bot.get_channel(Config.channel_roles_id)
+    if not channel:
+        print("El canal 'Tickets' no existe.")
+        return
+
+    embed = discord.Embed(
+        title="Sistema de Roles",
+        description="En este servidor, existen varios roles que se adaptan a tus preferencias y modos de juego favoritos en Magic The Gathering. " 
+                    "Puedes unirte a uno o a varios de estos roles para que los demás miembros sepan cuáles son tus intereses.",
+        color=discord.Color.purple()
+    )
+    embed.add_field(
+        name="\nRoles de juego", value=" ⚫ Commander\n 🟠 cEDH\n ⚪ Pioneer\n 🟢 Modern\n 🔵 Pauper",inline=False
+    )
+    embed.add_field(
+        name="Roles de compraventa", value="📨 Compraventa",inline=False
+    )
+    embed.add_field(
+        name="", value="Reacciona a los stickers para unirte a los roles.", inline=False
+    )
+    embed.set_footer(text="Powered by MTG-Verifier")
+
+    await channel.send(embed=embed)
+    print(f"Mensaje embed enviado en el canal {channel.name}.")
+
 
 bot.run(token)
