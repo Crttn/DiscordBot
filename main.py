@@ -149,7 +149,7 @@ async def countUsers():
         return  
 
     # Modifica el nombre del canal de voz "Miembros"
-    if member_channel_id:
+    if member_channel_id and active_channel_id and bot_cannle_id:
         # Verificar permisos para editar el canal
         if member_channel_id.permissions_for(guild_id.me).manage_channels:
             try:
@@ -158,12 +158,7 @@ async def countUsers():
                 print(f"Permisos inecesarios para editar el canal con id: {member_channel_id.name}")
         else:
             print(f"El bot no tiene permisos para editar canales")
-    else:
-        print(f"No se ha encontrado el canal con id: {member_channel_id}")
-
-    # Modifica el nombre del canal de voz "Activos"
-    if active_channel_id:
-        # Verificar permisos para editar el canal
+        # Modifica el nombre del canal de voz "Activos"
         if active_channel_id.permissions_for(guild_id.me).manage_channels:
             try:
                 await active_channel_id.edit(name=f"【 🟢 】 Activos: {activeMembers}")
@@ -171,12 +166,7 @@ async def countUsers():
                 print(f"Permisos inecesarios para editar el canal con id: {active_channel_id.name}")
         else:
             print(f"El bot no tiene permisos para editar canales")
-    else:
-        print(f"No se ha encontrado el canal con id: {active_channel_id}")
-
-    # Modifica el nombre del canal de voz "Bots"
-    if bot_cannle_id:
-        # Verificar permisos para editar el canal
+        # Modifica el nombre del canal de voz "Bots"
         if bot_cannle_id.permissions_for(guild_id.me).manage_channels:
             try:
                 await bot_cannle_id.edit(name=f"【 🤖 】 Bots: {totalBots}")
@@ -185,7 +175,7 @@ async def countUsers():
         else:
             print(f"El bot no tiene permisos para editar canales")
     else:
-        print(f"No se ha encontrado el canal con id: {bot_cannle_id}")
+        print(f"No se ha encontrado el canal con id: {member_channel_id}")
 
 # Genera un mensaje para los roles de juego
 @bot.command()
