@@ -2,8 +2,6 @@
 
 A simple reaction verification bot
 
-
-
 ## Functionalities
 
 New user account verification
@@ -11,8 +9,6 @@ New user account verification
 Automatic role assignment system
 
 Real time member counter 
-
-
 
 ## Setup
 
@@ -31,8 +27,6 @@ Edit the required data in the config.py file
 Run the main.py file
 
 Type {prefix}setup in any channel adn the bot will be ready to use
-
-
 
 <u>On Windows
 
