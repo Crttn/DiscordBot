@@ -100,7 +100,7 @@ async def countUsers():
     else:
         logging.warning(f"No se ha encontrado el servidor con ID: {Configuration.guild_id}")
 
-
+#Peticiones a la API de ScryFall
 @tasks.loop(minutes=15)
 async def tryScryScrape():
     await ScryfallRequest.send_sets_data(bot)

@@ -106,8 +106,10 @@ class ScryfallRequest:
                 set_id = card_set['id']
                 set_name = card_set['name']
 
-                # Verificar si el set ya ha sido visto
-                if set_id not in seen_sets:
+                set_totalCards = card_set['card_count']
+
+                # Verificar si el set ya ha sido visto y contiene cartas
+                if set_id not in seen_sets & set_totalCards > 0:
                     seen_sets.add(set_id)
 
                     # Crear el embed con los detalles del set
